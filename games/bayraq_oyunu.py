@@ -253,4 +253,3 @@ class BayraqOyunu(BaseGame):
             parse_mode="Markdown",
             reply_markup=kb,
         )
-        
