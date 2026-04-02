@@ -112,6 +112,7 @@ class SozIzahi(BaseGame):
 
             st["aparici_id"] = user.id
             st["aparici_ad"] = user.first_name
+            context.chat_data["game_state"] = st # Yaddaşı yeniləyirik
             
             await query.answer(f"Sözün: {st['soz'].upper()}", show_alert=True)
             
@@ -160,6 +161,7 @@ class SozIzahi(BaseGame):
             if st.get("aparici_id") == user.id:
                 st["aparici_id"] = None
                 st["aparici_ad"] = None
+                context.chat_data["game_state"] = st # Yaddaşı yeniləyirik
                 await query.answer("Aparıcılıqdan imtina edildi")
                 
                 text = f"❌ {user.mention_markdown()} aparıcılıqdan imtina etdi.\n\n👇 Kim izah etmək istəyir? Butona basın."
@@ -199,7 +201,7 @@ class SozIzahi(BaseGame):
                 f"🏆 +10 xal qazandın! Yeni raund başlayır..."
             , parse_mode="Markdown")
             
-            mod = st['mod']
+            mod = st.get('mod', 'qarisiq')
             all_words = [i['word'] for i in INITIAL_DATA if i['cat'] == mod]
             st['soz'] = random.choice(all_words)
             st['aparici_id'] = None
