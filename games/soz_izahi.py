@@ -159,7 +159,7 @@ class SozIzahi(BaseGame):
         else:
             await update_or_query.edit_message_text(text, parse_mode="Markdown", reply_markup=kb)
 
-     async def handle_callback(self, query, context: ContextTypes.DEFAULT_TYPE):
+    async def handle_callback(self, query, context: ContextTypes.DEFAULT_TYPE):
         data = query.data
         st = context.user_data.get("game_state", {})
         user = query.from_user
