@@ -1,10 +1,10 @@
 import random
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram.ext import ContextTypes, CommandHandler
+from telegram.ext import ContextTypes
 from games.base_game import BaseGame
 from pymongo import MongoClient
 
-# MongoDB Bağlantısı (Öz linkini bura qoymağı unutma)
+# MongoDB Bağlantısı
 MONGO_URL = "mongodb+srv://cabbarovxeyal32_db_user:Xeyal032aze@cluster0.f3gogmg.mongodb.net/?appName=Cluster0" 
 client = MongoClient(MONGO_URL)
 db = client['cro_bot_db']
@@ -13,36 +13,21 @@ scores_col = db['scores']
 
 OWNER_ID = 8371395083
 
-# 150+ FƏRQLİ SÖZDƏN İBARƏT BAZA
-CRO_SOZLER = [
-    "Alma", "Armud", "Nar", "Banan", "Gilas", "Çiyələk", "Qarpız", "Yovşan", "Bənövşə", "Lalə",
-    "Şir", "Pələng", "Ayı", "Dovşan", "Pişik", "İt", "At", "İnək", "Qoyun", "Keçi",
-    "Bakı", "Gəncə", "Sumqayıt", "Şəki", "Lənkəran", "Quba", "Şuşa", "Ağdam", "Füzuli", "Kəlbəcər",
-    "Məktəb", "Universitet", "Xəstəxana", "Polis", "Əsgər", "Həkim", "Müəllim", "Mühəndis", "Sürücü", "Aşpaz",
-    "Futbol", "Şahmat", "Güləş", "Boks", "Tennis", "Voleybol", "Basketbol", "Üzgüçülük", "Qaçış", "Oxatma",
-    "Dəniz", "Çay", "Göl", "Okean", "Şəlalə", "Dağ", "Meşə", "Səhra", "Ada", "Vadi",
-    "Günəş", "Ay", "Ulduz", "Bulud", "Yağış", "Qar", "Külək", "Şimşək", "Göyqurşağı", "Duman",
-    "Çörək", "Pendir", "Yumurta", "Balıq", "Ət", "Düyü", "Kartof", "Soğan", "Pomidor", "Xiyar",
-    "Mavi", "Qırmızı", "Yaşıl", "Sarı", "Qara", "Ağ", "Bənövşəyi", "Narıncı", "Qəhvəyi", "Boz",
-    "Körpü", "Bina", "Qapı", "Pəncərə", "Yol", "Park", "Muzey", "Teatr", "Kino", "Kitabxana",
-    "Güzgü", "Daraq", "Sabun", "Dəsmal", "Yataq", "Masa", "Stul", "Şkaf", "Xalça", "Pərdə",
-    "Qazan", "Tava", "Qaşıq", "Çəngəl", "Bıçaq", "Boşqab", "Fincan", "Çaydan", "Soba", "Soyuducu",
-    "Lüğət", "Xəritə", "Bayraq", "Pul", "Cüzdan", "Çanta", "Çətir", "Açar", "Qıfıl", "Zəng",
-    "Təbaşir", "Lövhə", "Dəftər", "Qələmdan", "Pozan", "Xətkeş", "Pərgar", "Boyaq", "Fırça", "Kağız",
-    "Təyyarə", "Vertolyot", "Raket", "Kosmos", "Planet", "Teleskop", "Ulduz", "Kometa", "Kürə", "Xətt",
-    "Gitar", "Tar", "Kamança", "Saz", "Piano", "Nafira", "Zurna", "Qaval", "Nağara", "Daf",
-    "Zeytun", "Sarımsaq", "Bibər", "Badımcan", "Kabaçki", "Mərci", "Noxud", "Lobya", "Qarğıdalı", "Buğda",
-    "Arı", "Kəpənək", "Milçək", "Ağcaqanad", "Hörümçək", "Qarışqa", "Böyrtkən", "Moruq", "Heyva", "Ərik",
-    "Şalvar", "Köynək", "Paltar", "Ayaqqabı", "Papaq", "Əlcək", "Şərf", "Corab", "Kəmər", "Düymə",
-    "Sabah", "Axşam", "Gecə", "Gündüz", "Həftə", "Ay", "İl", "Əsr", "Saat", "Dəqiqə"
-]
-
 class SozIzahi(BaseGame):
     def __init__(self):
-        super().__init__("cro", "Cro (Krokodil)")
-        # Bazada söz yoxdursa, yuxarıdakı 150+ sözü MongoDB-yə yükləyirik
+        super().__init__("cro", "HT-Cro") # Oyun adı HT-Cro olaraq dəyişdirildi
+        self.init_db()
+
+    def init_db(self):
+        # Əgər baza boşdursa, ilkin sözləri kateqoriya ilə əlavə edirik
         if words_col.count_documents({}) == 0:
-            words_col.insert_many([{"word": w.lower()} for w in CRO_SOZLER])
+            initial_data = [
+                {"word": "alma", "cat": "qarisiq"}, {"word": "şir", "cat": "qarisiq"},
+                {"word": "şah ismayıl", "cat": "tarix"}, {"word": "atabəylər", "cat": "tarix"},
+                {"word": "everest", "cat": "cografiya"}, {"word": "xəzər", "cat": "cografiya"},
+                {"word": "vaqif", "cat": "insan"}, {"word": "leyla", "cat": "insan"}
+            ]
+            words_col.insert_many(initial_data)
 
     def handles_callback(self, data, context, user_id):
         return data.startswith("cro__")
@@ -50,62 +35,91 @@ class SozIzahi(BaseGame):
     async def start_game(self, update_or_query, context: ContextTypes.DEFAULT_TYPE):
         self.set_active(context)
         
-        all_words = list(words_col.find({}))
-        chosen_word = random.choice(all_words)['word']
-
-        context.user_data["game_state"] = {
-            "soz": chosen_word,
-            "aparici_id": None,
-            "aparici_ad": None
-        }
-        
-        text = (
-            "🐊 *Cro (Krokodil) Başladı!* \n\n"
-            "👇 Kim izah etmək istəyir? Butona basın."
-        )
+        # İlk addım: Mod seçimi (Şəkildəki kimi)
+        text = "🎮 *HT-Cro* modunu seçin:"
         kb = InlineKeyboardMarkup([
-            [InlineKeyboardButton("🎤 Sözü İzah Et", callback_data="cro__aparici_ol")],
+            [InlineKeyboardButton("🌀 Qarışıq Sözlər", callback_data="cro__mod_qarisiq")],
+            [InlineKeyboardButton("📜 Tarix", callback_data="cro__mod_tarix"), 
+             InlineKeyboardButton("🌍 Coğrafiya", callback_data="cro__mod_cografiya")],
+            [InlineKeyboardButton("👥 İnsan Adları", callback_data="cro__mod_insan")],
             [InlineKeyboardButton("🔴 Oyunu Bitir", callback_data="cro__bitir")]
         ])
         
         if isinstance(update_or_query, Update):
             await update_or_query.message.reply_text(text, parse_mode="Markdown", reply_markup=kb)
         else:
-            await context.bot.send_message(
-                chat_id=update_or_query.message.chat_id,
-                text=text,
-                parse_mode="Markdown",
-                reply_markup=kb
-            )
+            await update_or_query.edit_message_text(text, parse_mode="Markdown", reply_markup=kb)
 
     async def handle_callback(self, query, context: ContextTypes.DEFAULT_TYPE):
         data = query.data
         st = context.user_data.get("game_state", {})
         user = query.from_user
 
-        if data == "cro__aparici_ol":
-            if st.get("aparici_id") is not None:
-                if st["aparici_id"] == user.id:
-                    await query.answer(f"Sənin sözün: {st['soz'].upper()}", show_alert=True)
-                else:
-                    await query.answer(f"Artıq aparıcı var: {st['aparici_ad']}", show_alert=True)
+        # MOD SEÇİMİ
+        if data.startswith("cro__mod_"):
+            mod = data.split("_")[-1]
+            all_words = list(words_col.find({"cat": mod}))
+            if not all_words:
+                await query.answer("Bu kateqoriyada söz yoxdur!", show_alert=True)
+                return
+            
+            chosen = random.choice(all_words)['word']
+            context.user_data["game_state"] = {
+                "soz": chosen,
+                "mod": mod,
+                "aparici_id": None,
+                "aparici_ad": None
+            }
+            
+            text = f"✅ *{mod.capitalize()}* modu seçildi!\n\n👇 Kim izah etmək istəyir? Butona basın."
+            kb = InlineKeyboardMarkup([
+                [InlineKeyboardButton("🎤 Sözü İzah Et", callback_data="cro__aparici_ol")],
+                [InlineKeyboardButton("🔙 Modu Dəyiş", callback_data="cro__back_to_mods")],
+                [InlineKeyboardButton("🔴 Oyunu Bitir", callback_data="cro__bitir")]
+            ])
+            await query.edit_message_text(text, parse_mode="Markdown", reply_markup=kb)
+
+        elif data == "cro__back_to_mods":
+            await self.start_game(query, context)
+
+        elif data == "cro__aparici_ol":
+            if st.get("aparici_id") is not None and st["aparici_id"] != user.id:
+                await query.answer(f"Artıq aparıcı var: {st['aparici_ad']}", show_alert=True)
                 return
 
             st["aparici_id"] = user.id
             st["aparici_ad"] = user.first_name
-            await query.answer(f"Sənin sözün: {st['soz'].upper()}\n\nİzah etməyə başla!", show_alert=True)
+            
+            # Sözə baxmaq üçün alert
+            await query.answer(f"Sözün: {st['soz'].upper()}", show_alert=True)
             
             text = (
-                f"🎤 *Aparıcı:* {user.mention_markdown()}\n"
-                f"📢 Sözü izah edir... Tapın görək! \n\n"
-                f"💡 Sözü unutmusansa, aşağıdakı butona bas."
+                f"👤 *Aparıcı:* {user.mention_markdown()}\n"
+                f"📂 *Mod:* {st['mod'].capitalize()}\n"
+                f"📢 Sözü izah edir... Tapın görək!"
             )
             kb = InlineKeyboardMarkup([
-                [InlineKeyboardButton("❓ Sözü Yenidən Gör", callback_data="cro__aparici_ol")],
-                [InlineKeyboardButton("🚫 Aparıcılıqdan İmtina Et", callback_data="cro__imtina")],
-                [InlineKeyboardButton("🔴 Oyunu Bitir", callback_data="cro__bitir")]
+                [InlineKeyboardButton("🔍 Sözə Baxmaq", callback_data="cro__soze_bax")],
+                [InlineKeyboardButton("❌ Fikrimi Dəyişdim", callback_data="cro__imtina")],
+                [InlineKeyboardButton("♻️ Növbəti Söz", callback_data="cro__novbeti")]
             ])
             await query.edit_message_text(text, parse_mode="Markdown", reply_markup=kb)
+
+        elif data == "cro__soze_bax":
+            if user.id == st.get("aparici_id"):
+                await query.answer(f"Sənin sözün: {st['soz'].upper()}", show_alert=True)
+            else:
+                await query.answer("Sən aparıcı deyilsən!", show_alert=True)
+
+        elif data == "cro__novbeti":
+            if user.id == st.get("aparici_id"):
+                mod = st['mod']
+                new_word = random.choice(list(words_col.find({"cat": mod})))['word']
+                st['soz'] = new_word
+                await query.answer("Söz dəyişdirildi!", show_alert=True)
+                await query.answer(f"Yeni sözün: {new_word.upper()}", show_alert=True)
+            else:
+                await query.answer("Yalnız aparıcı sözü dəyişə bilər!")
 
         elif data == "cro__imtina":
             if st.get("aparici_id") == user.id:
@@ -115,7 +129,7 @@ class SozIzahi(BaseGame):
 
         elif data == "cro__bitir":
             self.clear_active(context)
-            await query.edit_message_text("🏁 *Oyun dayandırıldı.*")
+            await query.edit_message_text("🏁 *HT-Cro dayandırıldı.*")
 
     async def handle_message(self, update, context: ContextTypes.DEFAULT_TYPE):
         st = context.user_data.get("game_state", {})
@@ -138,32 +152,17 @@ class SozIzahi(BaseGame):
             )
             
             await update.message.reply_text(
-                f"🔥 Halaldır! *{user.first_name}* düzgün tapdı! \n"
+                f"🥳 *{user.first_name}* düzgün tapdı! \n"
                 f"✅ Söz: *{dogru_soz.upper()}* \n"
-                f"🏆 +10 xal qazandın!"
+                f"🏆 +10 xal qazandın! Yeni raund başlayır..."
             , parse_mode="Markdown")
+            
+            # Yeni raund eyni modda başlasın
+            mod = st['mod']
+            new_word = random.choice(list(words_col.find({"cat": mod})))['word']
+            st['soz'] = new_word
+            st['aparici_id'] = None
+            st['aparici_ad'] = None
+            
+            # Yenidən kim izah etsin mesajı
             await self.start_game(update, context)
-
-    # --- OWNER & RANKING ---
-    async def add_word(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        if update.effective_user.id != OWNER_ID: return
-        
-        words_input = " ".join(context.args).lower()
-        if not words_input:
-            await update.message.reply_text("İstifadə: `/sozelaveet soz1, soz2`")
-            return
-        
-        new_words = [w.strip() for w in words_input.split(',')]
-        added_count = 0
-        for w in new_words:
-            if not words_col.find_one({"word": w}):
-                words_col.insert_one({"word": w})
-                added_count += 1
-        await update.message.reply_text(f"✅ {added_count} söz əlavə edildi. Toplam: {words_col.count_documents({})}")
-
-    async def show_ranking(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        top_users = scores_col.find().sort("score", -1).limit(10)
-        text = "🏆 *Cro Oyunu Top 10:* \n\n"
-        for i, user in enumerate(top_users, 1):
-            text += f"{i}. {user['name']} — *{user['score']} xal*\n"
-        await update.message.reply_text(text, parse_mode="Markdown")
