@@ -140,33 +140,32 @@ BAYRAQLАР = [
     {"olke":"Qvineya", "url":"https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/Flag_of_Guinea.svg/1280px-Flag_of_Guinea.svg.png", "ipucu":"Q","herf":7},
     {"olke":"Madaqaskar", "url":"https://upload.wikimedia.org/wikipedia/commons/thumb/b/bc/Flag_of_Madagascar.svg/1280px-Flag_of_Madagascar.svg.png", "ipucu":"M","herf":10}
 ]
-
-TURLAR        = 10
-PAS_HAKKI     = 3
-XAL_IPUCUSUZ  = 15   # ipucu almadan düzgün cavab
-XAL_IPUCULU   = 8    # ipucu alandan sonra düzgün cavab
-
+# ── Oyun Parametrləri ────────────────────────────────────────────────────────
+TURLAR        = 45   
+PAS_HAKKI     = 10   # Tur sayı çox olduğu üçün pası da artırdım
+XAL_IPUCUSUZ  = 15   
+XAL_IPUCULU   = 8    
 
 def dashes(n):
     return "＿ " * n
 
-
 class BayraqOyunu(BaseGame):
     def __init__(self):
+        # Komandaların menyuda görunməsi üçün adları təyin edirik
         super().__init__("bayraq", "Bayraq Oyunu")
 
     def handles_callback(self, data, context, user_id):
         return data.startswith("bayraq__")
 
-    # ── Oyunu başlat ──────────────────────────────────────────────────────────
+    # ── Oyunu başlat (/baslabayraq üçün) ──────────────────────────────────────
     async def start_game(self, query, context: ContextTypes.DEFAULT_TYPE):
         self.set_active(context)
+        # Siyahıdan 45 təsadüfi bayraq seçirik
         pool = random.sample(BAYRAQLАР, min(TURLAR, len(BAYRAQLАР)))
         context.user_data["game_state"] = {
             "pool": pool, "tur": 0, "xal": 0,
             "pas": PAS_HAKKI, "ipucu_gosterildi": False,
         }
-        # Köhnə menyunu silmək üçün orijinal try-except (bu hissə qalır)
         try:
             await query.message.delete()
         except Exception:
@@ -204,10 +203,9 @@ class BayraqOyunu(BaseGame):
             parse_mode="Markdown",
             reply_markup=kb,
         )
-        # Son mesaj ID-sini saxla
         context.user_data["game_state"]["last_msg_id"] = msg.message_id
 
-    # ── Callback ──────────────────────────────────────────────────────────────
+    # ── Callback (İpucu, Pas, Bitir) ──────────────────────────────────────────
     async def handle_callback(self, query, context: ContextTypes.DEFAULT_TYPE):
         data = query.data
         st   = context.user_data.get("game_state", {})
@@ -218,10 +216,7 @@ class BayraqOyunu(BaseGame):
                 await query.answer("💡 İpucu artıq göstərilib!")
                 return
             st["ipucu_gosterildi"] = True
-            context.user_data["game_state"] = st
-            # Caption-u yenilə
-            s   = st["pool"][st["tur"]]
-            idx = st["tur"]
+            s, idx = st["pool"][st["tur"]], st["tur"]
             caption = (
                 f"🚩 *Bayraq Oyunu* | Tur {idx+1}/{TURLAR}\n"
                 f"💰 Xal: {st['xal']}  •  ⏭ Pas: {st['pas']}\n\n"
@@ -231,19 +226,13 @@ class BayraqOyunu(BaseGame):
                 "✍️ Ölkə adını yazın:"
             )
             kb = InlineKeyboardMarkup([
-                [InlineKeyboardButton("💡 İpucu (göstərilib)", callback_data="bayraq__noop"),
-                 InlineKeyboardButton("⏭ Pas",                 callback_data="bayraq__pas")],
-                [InlineKeyboardButton("🔴 Bitir",              callback_data="bayraq__bitir")],
+                [InlineKeyboardButton("💡 İpucu (✅)", callback_data="bayraq__noop"),
+                 InlineKeyboardButton("⏭ Pas",     callback_data="bayraq__pas")],
+                [InlineKeyboardButton("🔴 Bitir",  callback_data="bayraq__bitir")],
             ])
             try:
-                await query.edit_message_caption(
-                    caption=caption, parse_mode="Markdown", reply_markup=kb
-                )
-            except Exception:
-                await query.answer(f"💡 İlk hərf: {s['ipucu']}")
-
-        elif data == "bayraq__noop":
-            await query.answer("💡 İpucu artıq göstərilib!")
+                await query.edit_message_caption(caption=caption, parse_mode="Markdown", reply_markup=kb)
+            except: pass
 
         elif data == "bayraq__pas":
             if st.get("pas", 0) <= 0:
@@ -253,89 +242,77 @@ class BayraqOyunu(BaseGame):
             st["pas"] -= 1
             st["tur"] += 1
             st["ipucu_gosterildi"] = False
-            await query.answer(f"⏭ Pas! Cavab: {dogru}")
-            
-            # BURADA ŞƏKİL SİLMƏ HİSSƏSİ LƏĞV EDİLDİ
+            await query.answer(f"⏭ Pas keçildi! Cavab: {dogru}")
             
             if st["tur"] >= TURLAR:
-                context.user_data["game_state"] = st
                 await self._bitir_mesaj(query.message.chat_id, context, st, user)
             else:
                 context.user_data["game_state"] = st
                 await self._foto_gonder(query.message.chat_id, context)
 
         elif data == "bayraq__bitir":
-            # BURADA ŞƏKİL SİLMƏ HİSSƏSİ LƏĞV EDİLDİ
             await self._bitir_mesaj(query.message.chat_id, context, st, user)
 
-    # ── Mesaj (cavab) ─────────────────────────────────────────────────────────
+    # ── Mesaj (Cavabı yoxla) ──────────────────────────────────────────────────
     async def handle_message(self, update, context: ContextTypes.DEFAULT_TYPE):
-        st   = context.user_data.get("game_state", {})
-        if not st:
-            return
+        st = context.user_data.get("game_state", {})
+        if not st: return
+        
         user  = update.effective_user
-        cavab = update.message.text.strip()
+        # Hərf böyüklüyünə baxmırıq (strip() və lower() ilə)
+        cavab = update.message.text.strip().lower()
         s     = st["pool"][st["tur"]]
-        dogru = s["olke"]
+        dogru = s["olke"].lower()
 
-        if cavab.lower() == dogru.lower():
+        if cavab == dogru:
             xal = XAL_IPUCUSUZ if not st["ipucu_gosterildi"] else XAL_IPUCULU
             st["xal"] += xal
             await update.message.reply_text(
-                f"✅ *Düzgün!* 🎉\n\n"
-                f"🚩 Bu *{dogru}* bayrağı idi!\n"
-                f"⭐ +{xal} xal!",
+                f"✅ *Düzgün!* 🎉\n🚩 Bu *{s['olke']}* bayrağı idi!\n⭐ +{xal} xal!",
                 parse_mode="Markdown"
             )
+            # Düz tapanda növbəti tur
+            st["tur"] += 1
+            st["ipucu_gosterildi"] = False
+            
+            if st["tur"] >= TURLAR:
+                context.user_data["game_state"] = st
+                await self._bitir_mesaj(update.effective_chat.id, context, st, user)
+            else:
+                context.user_data["game_state"] = st
+                await self._foto_gonder(update.effective_chat.id, context)
         else:
-            await update.message.reply_text(
-                f"❌ *Yanlış!*\n\n"
-                f"🚩 Bu *{dogru}* bayrağı idi.\n"
-                f"💪 Növbəti bayrağa hazır olun!",
-                parse_mode="Markdown"
-            )
+            # Səhv cavabda bot növbəti tura keçmir, şəkil dəyişmir
+            await update.message.reply_text("❌ Səhvdir, yenidən yoxlayın və ya 'Pas' verin.")
 
-        st["tur"] += 1
-        st["ipucu_gosterildi"] = False
-
-        # BURADA KÖHNƏ BAYRAQ ŞƏKLİNİ SİLƏN HİSSƏ LƏĞV EDİLDİ (try-except daxil)
-
-        if st["tur"] >= TURLAR:
-            context.user_data["game_state"] = st
-            await self._bitir_mesaj(update.effective_chat.id, context, st, user)
-        else:
-            context.user_data["game_state"] = st
-            await self._foto_gonder(update.effective_chat.id, context)
+    # ── Top Oyunçular (/topbayraq üçün) ───────────────────────────────────────
+    async def show_top(self, update, context):
+        scores = context.bot_data.get("scores", {})
+        if not scores:
+            await update.message.reply_text("📊 Hələ ki xal qazanan yoxdur.")
+            return
+        
+        # Xalları azalan sıra ilə düzürük
+        sorted_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)[:10]
+        text = "🏆 *Bayraq Oyunu - Top 10 Oyunçu*\n\n"
+        for i, (name, score) in enumerate(sorted_scores, 1):
+            text += f"{i}. {name} — *{score} xal*\n"
+        
+        await update.message.reply_text(text, parse_mode="Markdown")
 
     # ── Oyun bitdi ────────────────────────────────────────────────────────────
     async def _bitir_mesaj(self, chat_id, context, st, user):
         self.add_score(context, user.full_name, st["xal"])
         self.clear_active(context)
-
-        umumi   = context.bot_data.get("scores", {}).get(user.full_name, 0)
-        max_xal = TURLAR * XAL_IPUCUSUZ
-        faiz    = (st["xal"] / max_xal * 100) if max_xal > 0 else 0
-
-        if faiz == 100:   medal = "🏆 Mükəmməl! Siz bayraq ustasısınız!"
-        elif faiz >= 80:  medal = "🥇 Əla nəticə!"
-        elif faiz >= 60:  medal = "🥈 Yaxşı nəticə!"
-        elif faiz >= 40:  medal = "🥉 Pis deyil!"
-        else:             medal = "💪 Daha çox məşq edin!"
-
+        umumi = context.bot_data.get("scores", {}).get(user.full_name, 0)
         text = (
             f"🏁 *Bayraq Oyunu Bitdi!*\n\n"
             f"👤 Oyunçu: *{user.first_name}*\n"
-            f"⭐ Xal: *{st['xal']}* / {max_xal}\n"
-            f"{medal}\n\n"
-            f"🏆 Ümumi xal: *{umumi}*"
+            f"⭐ Topladığınız xal: *{st['xal']}*\n"
+            f"🏆 Ümumi xalınız: *{umumi}*"
         )
         kb = InlineKeyboardMarkup([
             [InlineKeyboardButton("🔄 Yenidən Oyna",  callback_data="oyun_bayraq")],
             [InlineKeyboardButton("🔙 Oyun Menyusu",  callback_data="ana_menu")],
         ])
-        await context.bot.send_message(
-            chat_id=chat_id,
-            text=text,
-            parse_mode="Markdown",
-            reply_markup=kb,
-            )
+        await context.bot.send_message(chat_id=chat_id, text=text, parse_mode="Markdown", reply_markup=kb)
