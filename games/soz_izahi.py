@@ -215,7 +215,7 @@ class SozIzahi(BaseGame):
             ])
             await query.edit_message_text(text, parse_mode="Markdown", reply_markup=kb)
 
-       elif data == "cro__soze_bax":
+        elif data == "cro__soze_bax":
             # game_state-i yenidən oxuduğunuzdan əmin olun
             st = context.user_data.get("game_state", {})
             if user.id == st.get("aparici_id"):
