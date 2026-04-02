@@ -37,7 +37,7 @@ CRO_SOZLER = [
     "Sabah", "Axşam", "Gecə", "Gündüz", "Həftə", "Ay", "İl", "Əsr", "Saat", "Dəqiqə"
 ]
 
-class CroGame(BaseGame):
+class SozIzahi(BaseGame):
     def __init__(self):
         super().__init__("cro", "Cro (Krokodil)")
         # Bazada söz yoxdursa, yuxarıdakı 150+ sözü MongoDB-yə yükləyirik
