@@ -224,16 +224,27 @@ class SozIzahi(BaseGame):
                 all_words = [i['word'] for i in INITIAL_DATA if i['cat'] == mod]
                 new_word = random.choice(all_words)
                 st['soz'] = new_word
+                # Alert çıxardırıq ki, butonun işlədiyi bilinsin
                 await query.answer(f"Yeni sözün: {new_word.upper()}", show_alert=True)
             else:
-                await query.answer("Yalnız aparıcı sözü dəyişə bilər!")
+                await query.answer("Yalnız aparıcı sözü dəyişə bilər!", show_alert=True)
 
         elif data == "cro__imtina":
             if st.get("aparici_id") == user.id:
-                await self.start_game(query, context)
+                # Aparıcı məlumatlarını sıfırlayırıq
+                st["aparici_id"] = None
+                st["aparici_ad"] = None
+                
+                text = f"❌ {user.mention_markdown()} aparıcılıqdan imtina etdi.\n\n👇 Kim izah etmək istəyir? Butona basın."
+                kb = InlineKeyboardMarkup([
+                    [InlineKeyboardButton("🎤 Aparıcı Olmaq İstəyirəm", callback_data="cro__aparici_ol")],
+                    [InlineKeyboardButton("🔙 Modu Dəyiş", callback_data="cro__back_to_mods")],
+                    [InlineKeyboardButton("🔴 Oyunu Bitir", callback_data="cro__bitir")]
+                ])
+                await query.edit_message_text(text, parse_mode="Markdown", reply_markup=kb)
             else:
-                await query.answer("Sən aparıcı deyilsən!", show_alert=True)
-
+                await query.answer("Sən onsuz da aparıcı deyilsən!", show_alert=True)
+                
         elif data == "cro__bitir":
             self.clear_active(context)
             await query.edit_message_text("🏁 *HT-Cro dayandırıldı.*")
