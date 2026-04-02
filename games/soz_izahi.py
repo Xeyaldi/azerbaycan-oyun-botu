@@ -121,9 +121,9 @@ class SozIzahi(BaseGame):
                 f"📢 Sözü izah edir... Tapın görək!"
             )
             kb = InlineKeyboardMarkup([
-                [InlineKeyboardButton("🔍 Sözə Baxmaq", callback_data="cro__soze_bax")],
-                [InlineKeyboardButton("❌ Fikrimi Dəyişdim", callback_data="cro__imtina")],
-                [InlineKeyboardButton("♻️ Növbəti Söz", callback_data="cro__novbeti")]
+                [InlineKeyboardButton("🔍 Sözə Baxmaq", callback_data="cro_soze_bax")],
+                [InlineKeyboardButton("❌ Fikrimi Dəyişdim", callback_data="cro_imtina")],
+                [InlineKeyboardButton("♻️ Növbəti Söz", callback_data="cro_novbeti")]
             ])
             await query.edit_message_text(text, parse_mode="Markdown", reply_markup=kb)
 
