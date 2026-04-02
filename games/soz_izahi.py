@@ -159,15 +159,15 @@ class SozIzahi(BaseGame):
         else:
             await update_or_query.edit_message_text(text, parse_mode="Markdown", reply_markup=kb)
 
-    async def handle_callback(self, query, context: ContextTypes.DEFAULT_TYPE):
+     async def handle_callback(self, query, context: ContextTypes.DEFAULT_TYPE):
         data = query.data
         st = context.user_data.get("game_state", {})
         user = query.from_user
 
+        # MOD SEÇİMİ
         if data.startswith("cro__mod_"):
             mod = data.split("_")[-1]
             all_words = [i['word'] for i in INITIAL_DATA if i['cat'] == mod]
-            
             if not all_words:
                 await query.answer("Bu kateqoriyada söz yoxdur!", show_alert=True)
                 return
@@ -186,9 +186,11 @@ class SozIzahi(BaseGame):
                 [InlineKeyboardButton("🔙 Modu Dəyiş", callback_data="cro__back_to_mods")],
                 [InlineKeyboardButton("🔴 Oyunu Bitir", callback_data="cro__bitir")]
             ])
+            await query.answer() # Buton donmasın deyə
             await query.edit_message_text(text, parse_mode="Markdown", reply_markup=kb)
 
         elif data == "cro__back_to_mods":
+            await query.answer()
             await self.start_game(query, context)
 
         elif data == "cro__aparici_ol":
@@ -198,6 +200,7 @@ class SozIzahi(BaseGame):
 
             st["aparici_id"] = user.id
             st["aparici_ad"] = user.first_name
+            
             await query.answer(f"Sözün: {st['soz'].upper()}", show_alert=True)
             
             text = (
@@ -224,16 +227,15 @@ class SozIzahi(BaseGame):
                 all_words = [i['word'] for i in INITIAL_DATA if i['cat'] == mod]
                 new_word = random.choice(all_words)
                 st['soz'] = new_word
-                # Alert çıxardırıq ki, butonun işlədiyi bilinsin
                 await query.answer(f"Yeni sözün: {new_word.upper()}", show_alert=True)
             else:
                 await query.answer("Yalnız aparıcı sözü dəyişə bilər!", show_alert=True)
 
         elif data == "cro__imtina":
             if st.get("aparici_id") == user.id:
-                # Aparıcı məlumatlarını sıfırlayırıq
                 st["aparici_id"] = None
                 st["aparici_ad"] = None
+                await query.answer("Aparıcılıqdan imtina edildi")
                 
                 text = f"❌ {user.mention_markdown()} aparıcılıqdan imtina etdi.\n\n👇 Kim izah etmək istəyir? Butona basın."
                 kb = InlineKeyboardMarkup([
@@ -243,12 +245,13 @@ class SozIzahi(BaseGame):
                 ])
                 await query.edit_message_text(text, parse_mode="Markdown", reply_markup=kb)
             else:
-                await query.answer("Sən onsuz da aparıcı deyilsən!", show_alert=True)
-                
-        elif data == "cro__bitir":
-            self.clear_active(context)
-            await query.edit_message_text("🏁 *HT-Cro dayandırıldı.*")
+                await query.answer("Sən aparıcı deyilsən!", show_alert=True)
 
+        elif data == "cro__bitir":
+            await query.answer("Oyun bitirilir...")
+            self.clear_active(context)
+            await query.edit_message_text("**🏁 HT-Cro dayandırıldı.**")
+            
     async def handle_message(self, update, context: ContextTypes.DEFAULT_TYPE):
         st = context.user_data.get("game_state", {})
         if not st or st.get("aparici_id") is None: return
