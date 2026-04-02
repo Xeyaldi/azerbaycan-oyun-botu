@@ -215,22 +215,29 @@ class SozIzahi(BaseGame):
             ])
             await query.edit_message_text(text, parse_mode="Markdown", reply_markup=kb)
 
-        elif data == "cro__soze_bax":
+       elif data == "cro__soze_bax":
+            # game_state-i yenidən oxuduğunuzdan əmin olun
+            st = context.user_data.get("game_state", {})
             if user.id == st.get("aparici_id"):
                 await query.answer(f"Sənin sözün: {st['soz'].upper()}", show_alert=True)
             else:
                 await query.answer("Sən aparıcı deyilsən!", show_alert=True)
 
         elif data == "cro__novbeti":
+            st = context.user_data.get("game_state", {})
             if user.id == st.get("aparici_id"):
-                mod = st['mod']
+                mod = st.get('mod', 'qarisiq')
                 all_words = [i['word'] for i in INITIAL_DATA if i['cat'] == mod]
                 new_word = random.choice(all_words)
+                
+                # MƏLUMATI YENİLƏYİN
                 st['soz'] = new_word
+                context.user_data["game_state"] = st # VACİB HİSSƏ
+                
                 await query.answer(f"Yeni sözün: {new_word.upper()}", show_alert=True)
             else:
                 await query.answer("Yalnız aparıcı sözü dəyişə bilər!", show_alert=True)
-
+                
         elif data == "cro__imtina":
             if st.get("aparici_id") == user.id:
                 st["aparici_id"] = None
