@@ -128,28 +128,34 @@ class SozIzahi(BaseGame):
             await query.edit_message_text(text, parse_mode="Markdown", reply_markup=kb)
 
         elif data == "cro__soze_bax":
-            # game_state-i yenidən oxuduğunuzdan əmin olun
             st = context.chat_data.get("game_state", {})
-            if user.id == st.get("aparici_id"):
+            aparici_id = st.get("aparici_id")
+            
+            if user.id == aparici_id:
+                # Aparıcıya sözü popup olaraq göstəririk
                 await query.answer(f"Sənin sözün: {st['soz'].upper()}", show_alert=True)
             else:
-                await query.answer("Sən aparıcı deyilsən!", show_alert=True)
+                # Başqası bassa xəbərdarlıq edirik
+                await query.answer("⚠️ Sən aparıcı deyilsən! Sözü yalnız izah edən görə bilər.", show_alert=True)
 
         elif data == "cro__novbeti":
             st = context.chat_data.get("game_state", {})
-            if user.id == st.get("aparici_id"):
+            aparici_id = st.get("aparici_id")
+            
+            if user.id == aparici_id:
                 mod = st.get('mod', 'qarisiq')
                 all_words = [i['word'] for i in INITIAL_DATA if i['cat'] == mod]
                 new_word = random.choice(all_words)
                 
-                # MƏLUMATI YENİLƏYİN
+                # Yeni sözü yaddaşa yazırıq
                 st['soz'] = new_word
-                context.chat_data["game_state"] = st # VACİB HİSSƏ
+                context.chat_data["game_state"] = st
                 
-                await query.answer(f"Yeni sözün: {new_word.upper()}", show_alert=True)
+                # Aparıcıya yeni sözü alert ilə göndəririk
+                await query.answer(f"🔄 Söz dəyişdirildi!\nYeni sözün: {new_word.upper()}", show_alert=True)
             else:
-                await query.answer("Yalnız aparıcı sözü dəyişə bilər!", show_alert=True)
-                
+                await query.answer("❌ Yalnız aparıcı sözü dəyişə bilər!", show_alert=True)
+                     
         elif data == "cro__imtina":
             if st.get("aparici_id") == user.id:
                 st["aparici_id"] = None
