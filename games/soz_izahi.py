@@ -112,7 +112,7 @@ INITIAL_DATA = [
     {"word": "emil", "cat": "insan"}, {"word": "ruslan", "cat": "insan"}, {"word": "zamin", "cat": "insan"}, {"word": "taleh", "cat": "insan"}, {"word": "pənah", "cat": "insan"},
     {"word": "ismayıl", "cat": "insan"}, {"word": "ibrahim", "cat": "insan"}, {"word": "yusif", "cat": "insan"}, {"word": "yunis", "cat": "insan"}, {"word": "yaqub", "cat": "insan"},
     {"word": "isa", "cat": "insan"}, {"word": "musa", "cat": "insan"}, {"word": "davud", "cat": "insan"}, {"word": "süleyman", "cat": "insan"}, {"word": "nuh", "cat": "insan"},
-        {"word": "məryəm", "cat": "insan"}, {"word": "ayşə", "cat": "insan"}, {"word": "xədicə", "cat": "insan"}, {"word": "zeynəb", "cat": "insan"}, {"word": "gülnar", "cat": "insan"},
+    {"word": "məryəm", "cat": "insan"}, {"word": "ayşə", "cat": "insan"}, {"word": "xədicə", "cat": "insan"}, {"word": "zeynəb", "cat": "insan"}, {"word": "gülnar", "cat": "insan"},
     {"word": "sevinc", "cat": "insan"}, {"word": "sevil", "cat": "insan"}, {"word": "könül", "cat": "insan"}, {"word": "lalə", "cat": "insan"}, {"word": "nərgiz", "cat": "insan"},
     {"word": "bənövşə", "cat": "insan"}, {"word": "reyhan", "cat": "insan"}, {"word": "fidan", "cat": "insan"}, {"word": "çiçək", "cat": "insan"}, {"word": "ulduz", "cat": "insan"},
     {"word": "aytac", "cat": "insan"}, {"word": "aynur", "cat": "insan"}, {"word": "aydan", "cat": "insan"}, {"word": "aysel", "cat": "insan"}, {"word": "günay", "cat": "insan"},
@@ -161,7 +161,7 @@ class SozIzahi(BaseGame):
 
     async def handle_callback(self, query, context: ContextTypes.DEFAULT_TYPE):
         data = query.data
-        st = context.user_data.get("game_state", {})
+        st = context.chat_data.get("game_state", {})
         user = query.from_user
 
         # MOD SEÇİMİ
@@ -173,7 +173,7 @@ class SozIzahi(BaseGame):
                 return
             
             chosen = random.choice(all_words)
-            context.user_data["game_state"] = {
+            context.chat_data["game_state"] = {
                 "soz": chosen,
                 "mod": mod,
                 "aparici_id": None,
@@ -217,14 +217,14 @@ class SozIzahi(BaseGame):
 
         elif data == "cro__soze_bax":
             # game_state-i yenidən oxuduğunuzdan əmin olun
-            st = context.user_data.get("game_state", {})
+            st = context.chat_data.get("game_state", {})
             if user.id == st.get("aparici_id"):
                 await query.answer(f"Sənin sözün: {st['soz'].upper()}", show_alert=True)
             else:
                 await query.answer("Sən aparıcı deyilsən!", show_alert=True)
 
         elif data == "cro__novbeti":
-            st = context.user_data.get("game_state", {})
+            st = context.chat_data.get("game_state", {})
             if user.id == st.get("aparici_id"):
                 mod = st.get('mod', 'qarisiq')
                 all_words = [i['word'] for i in INITIAL_DATA if i['cat'] == mod]
@@ -232,7 +232,7 @@ class SozIzahi(BaseGame):
                 
                 # MƏLUMATI YENİLƏYİN
                 st['soz'] = new_word
-                context.user_data["game_state"] = st # VACİB HİSSƏ
+                context.chat_data["game_state"] = st # VACİB HİSSƏ
                 
                 await query.answer(f"Yeni sözün: {new_word.upper()}", show_alert=True)
             else:
@@ -260,7 +260,7 @@ class SozIzahi(BaseGame):
             await query.edit_message_text("**🏁 HT-Cro dayandırıldı.**")
             
     async def handle_message(self, update, context: ContextTypes.DEFAULT_TYPE):
-        st = context.user_data.get("game_state", {})
+        st = context.chat_data.get("game_state", {})
         if not st or st.get("aparici_id") is None: return
 
         user = update.effective_user
@@ -286,5 +286,6 @@ class SozIzahi(BaseGame):
             st['soz'] = random.choice(all_words)
             st['aparici_id'] = None
             st['aparici_ad'] = None
+            context.chat_data["game_state"] = st
             
             await self.start_game(update, context)
